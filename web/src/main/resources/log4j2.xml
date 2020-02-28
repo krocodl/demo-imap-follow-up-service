@@ -13,11 +13,11 @@
 
         <RollingFile name="RollingFile-info"
                      fileName="./data/follow-up-service.log"
-                     filePattern="../logs/${date:yyyy-MM}/info-%d{MM-dd-yyyy}-%i.log.gz">
+                     filePattern="./data/${date:yyyy-MM}/info-%d{MM-dd-yyyy}-%i.log.gz">
             <PatternLayout pattern="${LOG_PATTERN}"/>
             <Policies>
                 <OnStartupTriggeringPolicy/>
-                <SizeBasedTriggeringPolicy size="2 MB"/>
+                <SizeBasedTriggeringPolicy size="20 MB"/>
             </Policies>
             <DefaultRolloverStrategy max="20"/>
         </RollingFile>
