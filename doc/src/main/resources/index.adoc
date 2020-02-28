@@ -1,0 +1,12 @@
+:toc:
+:sectnums:
+
+= Email Follow-Up Service
+
+include::task.adoc[]
+
+include::implementation.adoc[]
+
+include::production-ready.adoc[]
+
+

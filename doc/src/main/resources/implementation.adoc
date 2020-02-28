@@ -1,0 +1,110 @@
+== Details of current implementation
+
+=== Fundamental architecture
+
+Required functionality can be implemented in two common ways:
+
+* as a sideways service, which periodically polls the content of "inbox" and "outbox" folders from IMAP storage
+** pros:
+*** the service does not become critical to the users' activity
+*** possible to spread the whole load over time, including night time, when most users are not working
+*** implementation is more simple
+** cons:
+*** it is necessary to keep the real users's credentials
+*** different mail servers can have a different structure of the storage.
+For example, GreenMail mail server, which was used for integration tests, doesn't have 'sent' folder at all.
+Gmail has a localized sent folder name.
+So, in general, it becomes difficult to handle arbitrary mailbox storage.
+*** we always deal with stale data
+*** such type of service consumes resource even if users don't write any mails at all
+* as a proxy service, which intercepts all user activity
+** pros (for example, basing on the "Mireka" project):
+*** we are "event-driven" and always deal with up-to-date data
+*** we can deal with any structure of the mails storage
+** cons:
+*** service becomes "hot" and critical for the enterprise business
+*** implementation is more complex
+
+Since the service clearly has an "assisting" nature and to simplify the development of the demo example, it was decided to apply the "sideways" architecture.
+
+=== Limitations and simplifications
+
+* one instance of the service is intended to support only one user whose credentials as configured in the properties file.
+So:
+** the number of emails downloaded and analyzed daily is not high.
+For "enterprise size" implementation it makes size to parallelize the processing of individual users.
+So, querying data from the IMAP storage in a parallel way was not implemented at all.
+** the same, of course, if true about the sending notifications, but the similar approach can be applied for handling all notifications from many users, that's why *NotifyService.sendNotificationsFromQueue* supports parallel sending based on logical horizontal partitioning of the database (*NotifyEntity.partitionId*).
+* generation the text of notification from template was not implemented due to the triviality of such task
+* matching of sending and received mails is the simplest (SimplestMailsMatchingStrategy): by *RE:%<original subject>* subject of by *In-Reply-To* header of the received mail
+* the business process's design is the simplest: we are planning to notify on X,Y..Nth day after the sending of initial mail, if the planned day of the notification is in future.
+** consequence: for mails, sent in the past, if notification policy is *3,7,14* and the letter was sent *4* days ago, the notification will be planned on *-4 + (3+t)* th day
+** after the process is complete, the author of the original message does not receive any notifications from the system
+* only the first recipient of each mail is taken into account
+* the security of the information being processed is not considered in principle
+
+=== Other details
+
+* with relational database high performance can be achieved only with short transactions, that's why the whole common business process, implemented as *BusinessProcessService.executeRawBusinessProcess*, consists of several transactions with minimal scope
+* IMAP server does not support transactions at all, "most unreliable is last" style implementation requires a long unwanted transaction.
+So, the intermediate status of the notification was introduced in combination with the compensatory action *NotifyService.compensateBrokenSendingTransaction*.
+In the case of GMail we can read necessary data from the "Sent" folder.
+In general case, it can be possible, for example, to analyze IMAP server's log - "Change-Data-Capture" pattern
+* since the functional structure of the service is suspicious for further division into several separate services, the code structure of packages is based on the business essence of artifacts, and not on their technological nature.
+Since the demo example contains relatively little source code, the division of one into levels is not performed.
+Some small enough "common data model" is shared between services to avoid the introduction of additional DTO classes and data mappers.
+Yes, it is tight coupling, but early in the demo project is acceptable.
+* as the structure of the relational storage is very simple and the storage is used only by one instance of the service
+** the initial setup and updating is performing most simply by the usage *spring.jpa.hibernate.ddl-auto=true*
+** performance issues (indexes, for example) have not been considered in principle
+* fault handling for remote calls is implemented in a quite primitive way: retry all process after configurable time in case of getting *SocketTimeoutException* or *MailConnectException* exception
+* since the log acts as a UI in this case, a lot of business data is printed in it sometimes in the multi-lines form
+
+=== Usage
+
+.Building
+* standard way: *mvn clean install*
+* built artifacts:
+** *web\target\follow-up-web-0.0.1-SNAPSHOT.jar* - executable by *java -jar* service
+** *doc\target\follow-up-doc-0.0.1-SNAPSHOT.jar* - documentation
+
+.Execution
+* *java -jar follow-up-web-0.0.1-SNAPSHOT.jar --imap.username=<..> --imap.password=<..>*
+* after, you can find next created files in the *./data* folder
+** *follow-up-data.mv.db* - H2 database
+** *follow-up-service.log* - log of operations
+* during execution next REST endpoint are available for observing the state of service (all these URLs can be find in the startup log)
+** Use http://localhost:8080/notifier/api/outcoming for getting list of non matched outcoming mails by GET
+** Use http://localhost:8080/notifier/api/state for getting state of the service by GET
+** Use http://localhost:8080/notifier/api/execute for manually execution of the process by POST
+** Use http://localhost:8080/notifier/api/notifications for getting list of notifications by GET
+* next parameters can be used for configuration as *--<paramName>=<paramValue>* or in the *application.properties* file
+** *imap.username* - GMail login
+** *imap.password* - GMail password
+** *imap.outbox* - name of the folder for sent message.
+Tune this parameter according with localisation of account ("[Gmail]/Отправленные" or "[Gmail]/Sent Mail" for example).
+If the outbox was not found during the initialization, all found folders are enumerated in the log.
+** *analiser.remindStrategy* - how many days to send another notification, default value "3,7,14"
+** *dateService.daysOffset* - the offset of the service's date from the current, default value "0", use it for test purpose to force sending notifications
+** *businessProcess.cron* - how often the business process is automatically executed.
+Default value is "0 0 * * * *" (each hour), use "0 * * * * *" (each minute) for test execution
+
+.Test scenario
+* create test GMail mailbox
+* sent tree mails to somebody and answer from other side to one of them
+* execute *java -jar follow-up-web-0.0.1-SNAPSHOT.jar --imap.username=<..> --imap.password=<..>*
+** validate, that http://localhost:8080/notifier/api/outcoming return only two non-answered mail with corresponding *notifyDate* property
+** validate, that http://localhost:8080/notifier/api/state returns not null *lastSendDate* and *lastReveiceDate* properties.
+Next time only mails sent and received after these dates will be queried from the IMAP server.
+* execute *java -jar follow-up-web-0.0.1-SNAPSHOT.jar --imap.username=<..> --imap.password=<..> --dateService.daysOffset=3*
+** validate, that notification was sent and received by both sides
+** validate, that http://localhost:8080/notifier/api/outcoming return only two non-answered mail with updated *notifyDate* property
+** validate, that http://localhost:8080/notifier/api/notifications returns empty result
+* execute *java -jar follow-up-web-0.0.1-SNAPSHOT.jar --imap.username=<..> --imap.password=<..> --businessProcess.cron=0 * * * * **
+* answer from other side to another mail and wait one minute
+** validate, that http://localhost:8080/notifier/api/outcoming return only one non-answered mail
+
+
+
+
+

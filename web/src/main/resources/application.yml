@@ -1,0 +1,46 @@
+server:
+  port: 8080
+  contextPath: /notifier
+  tomcat:
+    uri-encoding: UTF-8
+
+imap:
+  username: followUpDemoBox@gmail.com
+  password: followUpDemo35
+  server: imap.gmail.com
+  port: 993
+  inbox: inbox
+  # tune this parameter according with localisation of account
+  outbox: "[Gmail]/Отправленные"
+
+smtp:
+  server: smtp.gmail.com
+  port: 587
+
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:file:./data/follow-up-data
+    username: sa
+  jpa:
+    showSql: true
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+
+analiser:
+  remindStrategy: 3,7,14
+
+notifier:
+  threadsCount: 3
+
+dateService:
+  # for test purposes
+  daysOffset: 0
+
+businessProcess:
+  retryMinutes: 1
+  # each hour for normal execution
+  cron: 0 0 * * * *
+  # each minute for test execution
+  # cron: 0 * * * * *

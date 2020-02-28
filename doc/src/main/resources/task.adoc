@@ -1,0 +1,27 @@
+## Task definition
+
+### Problem Statement
+
+We have a group of sales people who have many email conversations going on at the same time with their customers.
+Sometimes these threads are started and then forgotten because the customer fails to reply, so we would like to improve the response rates of customers to these emails.
+Therefore, we would like a service which sends follow-up emails when a customer has not responded to an email from our sales people.
+
+### Solution
+
+We would like you to create the service which sends these follow-up emails.
+It should:
+* See when our sales person has sent an email
+* Check whether the customer has responded to that email, and then decide whether to send a follow-up email and when to send it
+* Once the customer has responded, stop sending follow-up emails
+* Operational parameters of the service should be configurable
+
+### What to Send Us
+
+* A link to a Git repo containing the code for a small Java service **that can be easily started** with specified email inbox credentials.
+The service can use [IMAP](https://en.wikipedia.org/wiki/Internet_Message_Access_Protocol) protocol to connect to the mailbox.
+* Instructions for building and running the service
+* Any thoughts that you have about making a service like this production-ready
+
+### Hints
+
+You can register a Gmail account and follow [this](https://support.google.com/mail/answer/7126229?hl=en) to connect with IMAP. Using Gmail is not a requirement, but it is a quick and easy way to get a mailbox with IMAP support.

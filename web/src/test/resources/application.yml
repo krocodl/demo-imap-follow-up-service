@@ -1,0 +1,31 @@
+server:
+  contextPath: /notifier
+
+imap:
+  server: localhost
+  username: test@imap.com
+  password: test
+  inbox: inbox
+  outbox: outbox
+
+smtp:
+  server: localhost
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:follow-up-data;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+
+analiser:
+  remindStrategy: 3,7,14
+
+
+notifier:
+  threadsCount: 3
+
+dateService:
+  daysOffset: 0
+
+businessProcess:
+  retryMinutes: 1
+  cron: 0 0 0 1 1 *
