@@ -33,14 +33,13 @@ Developing this concept we inevitably enter the territory of CRM systems.
 
 ===  Technical improvements
 
-* taking into account different timezones of user/recipients and service
-Also, it is necessary to more carefully investigate the time-related query features/limitations of IMAP protocol.
-* add auto-discovering of folders, based on attributes (https://developers.google.com/gmail/imap/imap-extensions)
 * split service as minimum into two parts: notifier service and bulk mailing service.
 ** In fact, gathering data from IMAP boxes and dealing with the database is quite different by nature activities.
 In case of a high load, it makes sense to split them and to implement the first one based on the NIO approach.
 Also, it is a quite good candidate to be located separately into DMZ.
 ** so, it makes sense to considering architecture, based on three services, connected by queues of messages
+* take into account different timezones of user/recipients and service Also, it is necessary to more carefully investigate the time-related query features/limitations of IMAP protocol.
+* add auto-discovering of folders, based on attributes ( use https://developers.google.com/gmail/imap/imap-extensions and https://tools.ietf.org/html/rfc6154#section-2)
 
 * distributed processing
 ** apply message queue for processing user's accounts (one message per one account)

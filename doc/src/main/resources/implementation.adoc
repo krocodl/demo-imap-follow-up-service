@@ -91,6 +91,7 @@ Default value is "0 0 * * * *" (each hour), use "0 * * * * *" (each minute) for 
 
 .Test scenario
 * create test GMail mailbox
+** in the security account settings: disable 2-ways authentication and enable access for unsafe applications
 * sent tree mails to somebody and answer from other side to one of them
 * execute *java -jar follow-up-web-0.0.1-SNAPSHOT.jar --imap.username=<..> --imap.password=<..>*
 ** validate, that http://localhost:8080/notifier/api/outcoming return only two non-answered mail with corresponding *notifyDate* property
@@ -103,6 +104,7 @@ Next time only mails sent and received after these dates will be queried from th
 * execute *java -jar follow-up-web-0.0.1-SNAPSHOT.jar --imap.username=<..> --imap.password=<..> --businessProcess.cron=0 * * * * **
 * answer from other side to another mail and wait one minute
 ** validate, that http://localhost:8080/notifier/api/outcoming return only one non-answered mail
+* play with sending and answering of emails
 
 
 
