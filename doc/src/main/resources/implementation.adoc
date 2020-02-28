@@ -63,7 +63,7 @@ Yes, it is tight coupling, but early in the demo project is acceptable.
 === Usage
 
 .Building
-* standard way: *mvn clean install*
+* standard way: *mvn clean install* with JDK 1.8
 * built artifacts:
 ** *web\target\follow-up-web-0.0.1-SNAPSHOT.jar* - executable by *java -jar* service
 ** *doc\target\follow-up-doc-0.0.1-SNAPSHOT.jar* - documentation
