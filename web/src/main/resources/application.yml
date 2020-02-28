@@ -5,14 +5,15 @@ server:
     uri-encoding: UTF-8
 
 imap:
-  username: followUpDemoBox@gmail.com
+  username: followUpDemoBox1@gmail.com
+  # username: followUpDemoBox@gmail.com
   password:
   server: imap.gmail.com
   port: 993
   inbox: inbox
   # tune this parameter according with localization of account.
-  # outbox: "[Gmail]/Sent Mail"
-  outbox: "[Gmail]/Отправленные"
+  outbox: "[Gmail]/Sent Mail"
+  #outbox: "[Gmail]/Отправленные"
 
 smtp:
   server: smtp.gmail.com
