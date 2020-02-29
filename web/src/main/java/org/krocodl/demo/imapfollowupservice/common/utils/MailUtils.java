@@ -1,6 +1,7 @@
 package org.krocodl.demo.imapfollowupservice.common.utils;
 
 import org.apache.commons.lang3.StringUtils;
+import org.krocodl.demo.imapfollowupservice.extractor.ImapTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,6 +9,7 @@ import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.Store;
 import javax.mail.internet.MimeMessage;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,4 +59,11 @@ public final class MailUtils {
         return ret;
     }
 
+    public static Date getMessageReceivedDate(Message msg) {
+        try {
+            return msg.getReceivedDate();
+        } catch (Exception ex) {
+            throw new ImapTransportException("Can't get date from message", ex);
+        }
+    }
 }

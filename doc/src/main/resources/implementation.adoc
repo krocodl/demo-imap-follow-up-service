@@ -81,8 +81,7 @@ Yes, it is tight coupling, but early in the demo project is acceptable.
 * next parameters can be used for configuration as *--<paramName>=<paramValue>* or in the *application.properties* file
 ** *imap.username* - GMail login
 ** *imap.password* - GMail password
-** *imap.outbox* - name of the folder for sent message.
-Tune this parameter according with localisation of account ("[Gmail]/Отправленные" or "[Gmail]/Sent Mail" for example).
+** *imap.outbox* - name of the folder for sent message, default value is "auto" ( service makes an attempt to guess it based on use https://developers.google.com/gmail/imap/imap-extensions attributes)
 If the outbox was not found during the initialization, all found folders are enumerated in the log.
 ** *analiser.remindStrategy* - how many days to send another notification, default value "3,7,14"
 ** *dateService.daysOffset* - the offset of the service's date from the current, default value "0", use it for test purpose to force sending notifications
@@ -92,7 +91,7 @@ Default value is "0 0 * * * *" (each hour), use "0 * * * * *" (each minute) for 
 .Test scenario
 * create test GMail mailbox
 ** in the security account settings: disable 2-ways authentication and enable access for unsafe applications
-* sent tree mails to somebody and answer from other side to one of them
+* sent three mails to somebody and answer from other side to one of them
 * execute *java -jar follow-up-web-0.0.1-SNAPSHOT.jar --imap.username=<..> --imap.password=<..>*
 ** validate, that http://localhost:8080/notifier/api/outcoming return only two non-answered mail with corresponding *notifyDate* property
 ** validate, that http://localhost:8080/notifier/api/state returns not null *lastSendDate* and *lastReveiceDate* properties.

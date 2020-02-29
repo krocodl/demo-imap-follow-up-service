@@ -87,14 +87,14 @@ public class MockedMailServer {
     }
 
     public void putToOutbox(MimeMessage mimeMessage) throws Exception {
-        imapMailReceiver.doWithStore(outFolderName, folder -> {
+        imapMailReceiver.doWithFolder(outFolderName, folder -> {
             folder.appendMessages(new Message[]{mimeMessage});
             return mimeMessage.getSubject();
         }, mimeMessage.getSubject());
     }
 
     public void putToInbox(MimeMessage mimeMessage) throws Exception {
-        imapMailReceiver.doWithStore(inFolderName, folder -> {
+        imapMailReceiver.doWithFolder(inFolderName, folder -> {
             folder.appendMessages(new Message[]{mimeMessage});
             return mimeMessage.getSubject();
         }, mimeMessage.getSubject());

@@ -34,23 +34,24 @@ Developing this concept we inevitably enter the territory of CRM systems.
 ===  Technical improvements
 
 * split service as minimum into two parts: notifier service and bulk mailing service.
-** In fact, gathering data from IMAP boxes and dealing with the database is quite different by nature activities.
+** In fact, gathering data from IMAP boxes and dealing with the database is quite different by IO nature activities.
 In case of a high load, it makes sense to split them and to implement the first one based on the NIO approach.
-Also, it is a quite good candidate to be located separately into DMZ.
-** so, it makes sense to considering architecture, based on three services, connected by queues of messages
-* take into account different timezones of user/recipients and service Also, it is necessary to more carefully investigate the time-related query features/limitations of IMAP protocol.
-* add auto-discovering of folders, based on attributes ( use https://developers.google.com/gmail/imap/imap-extensions and https://tools.ietf.org/html/rfc6154#section-2)
+Also, separated mail gate is a quite good candidate to be located separately into DMZ.
+** so, it makes sense to considering architecture, based on three services, connected by queues of messages: notifier, bulk sender and mail gate
 
 * distributed processing
-** apply message queue for processing user's accounts (one message per one account)
-** apply distributed log system (kafka, for example) for processing recipient's notifications.
-In this case, a distributed log is better than a message queue due to the partitioning feature.
-Also, similar functionality can be implemented based on databased but less effectively, some rough implementation is performed by the demo project.
+** apply message queue for processing user's accounts (one message per one account) and batches of mails
+** apply distributed log system (kafka, for example) for processing notifications.
+In this case, a distributed log is better than a message queue due to already available the partitioning feature.
+Also, similar functionality can be implemented based on database (some rough implementation is performed by the demo project) but less effectively
 ** if we are planning to deal with big data volumes it is better to think about data sharding in advance.
 It is a quite good case for sharding, because we don't deal with long-living data.
 
 * even in the case of one service, splitting the whole business process into several tasks, activated asynchronously by internal events one after another.
 Different execution (threads count, for example) and retry policies (count, pauses for example) for each task.
+
+* take into account different timezones of user/recipients and service
+* it is necessary to more carefully investigate the time-related query features/limitations of IMAP protocol.
 
 * general for database access
 ** optimize all concerning tables for high concurrent access.

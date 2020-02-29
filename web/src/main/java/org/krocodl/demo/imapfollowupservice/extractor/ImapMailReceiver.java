@@ -1,5 +1,7 @@
 package org.krocodl.demo.imapfollowupservice.extractor;
 
+import com.sun.mail.imap.IMAPFolder;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.krocodl.demo.imapfollowupservice.common.utils.MailUtils;
 import org.slf4j.Logger;
@@ -10,13 +12,14 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import javax.mail.Folder;
 import javax.mail.FolderNotFoundException;
-import javax.mail.Message;
+import javax.mail.MessagingException;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.search.ComparisonTerm;
 import javax.mail.search.ReceivedDateTerm;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -38,6 +41,8 @@ public class ImapMailReceiver {
     public static final String SMTP_PORT = "smtp.port";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ImapMailReceiver.class);
+    private static final String ID_ATTRIBUTE_OUTBOX_FOLDER = "\\Sent";
+    private static final String STD_AUTO_OUTBOX_FOLDER = "auto";
 
     @Value("${" + IMAP_USERNAME + "}")
     private String username;
@@ -53,14 +58,6 @@ public class ImapMailReceiver {
     private String outboxName;
 
     private Session emailSession;
-
-    private static Date getMessageReceivedDate(Message msg) {
-        try {
-            return msg.getReceivedDate();
-        } catch (Exception ex) {
-            throw new ImapTransportException("Can't get date from message", ex);
-        }
-    }
 
     @PostConstruct
     public void postConstruct() {
@@ -78,6 +75,7 @@ public class ImapMailReceiver {
         Store store = getConnectedStore();
 
 
+        fixAutoOutboxName();
         try {
             LOGGER.info("{} count = {} ", inboxName, getMessagesCount(inboxName));
             LOGGER.info("{} count = {} ", outboxName, getMessagesCount(outboxName));
@@ -92,7 +90,7 @@ public class ImapMailReceiver {
     }
 
     public int getMessagesCount(String boxName) throws Exception {
-        return doWithStore(boxName, Folder::getMessageCount, "receiving count in " + boxName);
+        return doWithFolder(boxName, Folder::getMessageCount, "receiving count in " + boxName);
     }
 
     private Store getConnectedStore() {
@@ -108,16 +106,16 @@ public class ImapMailReceiver {
     Pair<List<ExtractedMessage>, List<ExtractedMessage>> getReceivedSentMessages(Date receivedAfter, Date sentAfter) {
         Pair<List<ExtractedMessage>, List<ExtractedMessage>> ret = Pair.of(new ArrayList<>(), new ArrayList<>());
 
-        ret.getLeft().addAll(doWithStore(
+        ret.getLeft().addAll(doWithFolder(
                 inboxName,
                 folder -> Stream.of(folder.search(new ReceivedDateTerm(ComparisonTerm.GE, receivedAfter))). // IMAP supports only day accuracy search
-                        filter(m -> getMessageReceivedDate(m).compareTo(receivedAfter) >= 0). // time is stored to the nearest second
+                        filter(m -> MailUtils.getMessageReceivedDate(m).compareTo(receivedAfter) >= 0). // time is stored to the nearest second
                         map(ExtractedMessage::new).collect(Collectors.toList()),
                 "receiving new mails"));
-        ret.getRight().addAll(doWithStore(
+        ret.getRight().addAll(doWithFolder(
                 outboxName,
                 folder -> Stream.of(folder.search(new ReceivedDateTerm(ComparisonTerm.GE, sentAfter))). // IMAP supports only day accuracy search
-                        filter(m -> getMessageReceivedDate(m).compareTo(sentAfter) >= 0). // time is stored to the nearest second
+                        filter(m -> MailUtils.getMessageReceivedDate(m).compareTo(sentAfter) >= 0). // time is stored to the nearest second
                         map(ExtractedMessage::new).collect(Collectors.toList()),
                 "receiving sent mails"));
 
@@ -125,17 +123,49 @@ public class ImapMailReceiver {
     }
 
     private List<String> getFolders() {
+        return doWithStore(store -> {
+            return Stream.of(store.getDefaultFolder().list("*")).map(folder -> {
+                String attributes;
+                try {
+                    attributes = StringUtils.join(((IMAPFolder) folder).getAttributes());
+                } catch (MessagingException ex) {
+                    throw new ImapTransportException("can't get attributes of " + folder.getName(), ex);
+                }
+                return folder.getName() + "[" + attributes + "]";
+            }).collect(Collectors.toList());
+
+        }, "getting list of folders");
+    }
+
+    private void fixAutoOutboxName() {
+        if (!STD_AUTO_OUTBOX_FOLDER.equals(outboxName)) {
+            return;
+        }
+        doWithStore(store -> {
+            for (Folder folder : store.getDefaultFolder().list("*")) {
+                String[] attrs = ((IMAPFolder) folder).getAttributes();
+                if (Arrays.asList(attrs).contains(ID_ATTRIBUTE_OUTBOX_FOLDER)) {
+                    outboxName = folder.getFullName();
+                    break;
+                }
+            }
+            return null;
+        }, "guessing outo box name");
+    }
+
+    public <R> R doWithStore(StoreAction<R> action, String desc) {
+        Folder folder = null;
         Store store = getConnectedStore();
         try {
-            return Stream.of(store.getDefaultFolder().list("*")).map(Folder::getName).collect(Collectors.toList());
+            return action.execute(store);
         } catch (Exception ex) {
-            throw new ImapTransportException("Can't get list of folders", ex);
+            throw new ImapTransportException("Can't perform '" + desc, ex);
         } finally {
             MailUtils.closeNoEx(store, IMAPS);
         }
     }
 
-    public <R> R doWithStore(String folderName, FolderAction<R> action, String desc) {
+    public <R> R doWithFolder(String folderName, FolderAction<R> action, String desc) {
         Folder folder = null;
         Store store = getConnectedStore();
         try {
