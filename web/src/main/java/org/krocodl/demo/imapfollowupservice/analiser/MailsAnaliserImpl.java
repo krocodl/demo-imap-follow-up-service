@@ -71,7 +71,6 @@ public class MailsAnaliserImpl implements MailsAnaliser {
         }
 
         /**
-         * @FIXME on Oracle with more then 1000 mail will be error, use special dialect
          * due to issues with IMAP query we have in any case to remove duplicates
          */
         outcomingMailRepository.findDuplicates(batchOfMails.getOutcomingMails().keySet()).forEach(uid -> batchOfMails.getOutcomingMails().remove(uid));

@@ -11,17 +11,19 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.mail.Message;
 import javax.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-import java.util.stream.LongStream;
+import java.util.stream.IntStream;
 
 import static org.krocodl.demo.imapfollowupservice.extractor.ExtractedMessage.FOLLOW_UP_QUEUE_ID;
 import static org.krocodl.demo.imapfollowupservice.extractor.ImapMailReceiver.IMAP_USERNAME;
@@ -56,6 +58,11 @@ public class NotifyServiceImpl implements NotifyService {
         executorService = Executors.newFixedThreadPool(threadsCount);
     }
 
+    @PreDestroy
+    public void preDestroy() {
+        executorService.shutdownNow();
+    }
+
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void addNotificationsToQueue(List<NotifyEntity> list) {
@@ -75,8 +82,8 @@ public class NotifyServiceImpl implements NotifyService {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public int compensateBrokenSendingTransaction(List<Long> sentQueueIds) {
-        int ret = notifyRepository.removeLostMessages(sentQueueIds);
-        notifyRepository.markAsNotSent();
+        int ret = notifyRepository.removeMessagesWithIds(sentQueueIds);
+        notifyRepository.marAllkAsNotSent();
         return ret;
     }
 
@@ -98,47 +105,40 @@ public class NotifyServiceImpl implements NotifyService {
 
     @Override
     public int sendNotificationsFromQueue() {
-        List<List<NotifyEntity>> partitions = transactionalService.executeInNewTransaction(() -> {
-            List<List<NotifyEntity>> ret = new ArrayList<>();
-            LongStream.range(0, threadsCount).forEach(partitionId -> {
-                List<NotifyEntity> partition = notifyRepository.queryForSending(partitionId);
-                if (!partition.isEmpty()) {
-                    ret.add(partition);
-                    notifyRepository.markAsSent(partition.stream().map(NotifyEntity::getId).collect(Collectors.toList()));
-                    LOGGER.info("Select {} notifications for {} partition", partition.size(), partitionId);
-                }
-            });
-            return ret;
-        }, "Select notifies for sending");
+        List<Callable<Integer>> partitionTasks = IntStream.range(0, threadsCount).boxed()
+                .map(idx -> (Callable<Integer>) () -> sendNotificationForOnePartition(idx))
+                .collect(Collectors.toList());
 
-        List<Callable<List<Long>>> tasks = partitions.stream()
-                .map(partition -> (Callable<List<Long>>) () -> sendNotifications(partition)).collect(Collectors.toList());
-
-        List<Future<List<Long>>> results = new ArrayList<>();
+        int cnt = 0;
         try {
-            results = executorService.invokeAll(tasks);
-        } catch (InterruptedException ex) {
+            for (Future<Integer> task : executorService.invokeAll(partitionTasks)) {
+                cnt += task.get();
+            }
+        } catch (InterruptedException | ExecutionException ex) {
             LOGGER.error("Can't call execution service", ex);
             Thread.currentThread().interrupt();
         }
 
-        List<Long> ids = new ArrayList<>();
-        results.forEach(task -> {
-            if (task.isDone()) {
-                try {
-                    ids.addAll(task.get());
-                } catch (Exception ex) {
-                    throw new NotifyException("Can't get ids from task", ex.getCause());
-                }
-            }
-        });
+        return cnt;
+    }
+
+    private int sendNotificationForOnePartition(int partitionId) {
+        List<NotifyEntity> partition = notifyRepository.queryForSending(partitionId);
+        if (partition.isEmpty()) {
+            return 0;
+        }
 
         transactionalService.executeInNewTransaction(() -> {
-            //@FIXME on Oracle with more then 1000 mail will be error, use special dialect
-            notifyRepository.removeLostMessages(ids);
+            notifyRepository.markAsSent(partition.stream().map(NotifyEntity::getId).collect(Collectors.toList()));
+        }, " mark notification as sent from partition " + partitionId);
+
+        List<Long> sentIds = sendNotifications(partition);
+
+        transactionalService.executeInNewTransaction(() -> {
+            notifyRepository.removeMessagesWithIds(sentIds);
         }, "Removing sent notifications");
 
-        return ids.size();
+        return sentIds.size();
     }
 
     private List<Long> sendNotifications(List<NotifyEntity> notifications) {

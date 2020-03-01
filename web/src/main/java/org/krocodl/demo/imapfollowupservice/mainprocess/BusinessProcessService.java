@@ -18,6 +18,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -49,6 +50,11 @@ public class BusinessProcessService {
     @PostConstruct
     public void postConstruct() {
         singleTheadExecutorService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1);
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        singleTheadExecutorService.shutdownNow();
     }
 
     String getManuallySchedulledTime() {

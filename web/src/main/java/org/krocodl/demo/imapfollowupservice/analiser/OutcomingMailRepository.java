@@ -11,12 +11,14 @@ import java.util.List;
 
 public interface OutcomingMailRepository extends JpaRepository<OutcomingMailEntity, String> {
 
+    //@FIXME on Oracle with more then 1000 mail will be error, use special dialect
     @Query("select m.uid from OutcomingMailEntity m where m.uid in ?1")
     List<String> findDuplicates(Collection ids);
 
     @Query("select m.uid from OutcomingMailEntity m where m.uid = ?1 or m.subject like ?2")
     List<String> matchWithReplyToOrSubject(String uid, String subjectFilter);
 
+    //@FIXME on Oracle with more then 1000 mail will be error, use special dialect
     @Modifying
     @Query("delete from OutcomingMailEntity m where m.uid in ?1")
     void removeByIds(List<String> sentQueueIds);
