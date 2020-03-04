@@ -83,7 +83,7 @@ public class MailsAnaliserImpl implements MailsAnaliser {
             }
         });
 
-        stateService.setLastSendDate(batchOfMails.getLastSendDate());
+        stateService.setLastSendUid(batchOfMails.getLastSendUid());
 
         return batchOfMails.getOutcomingMails().size();
     }
@@ -103,17 +103,13 @@ public class MailsAnaliserImpl implements MailsAnaliser {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void applyMailsMatching(BatchOfMails batchOfMails, List<String> foundMails) {
-        stateService.setLastReceiveDate(batchOfMails.getLastReceiveDate());
+        stateService.setLastReceiveUid(batchOfMails.getLastReceiveUid());
         outcomingMailRepository.removeByIds(foundMails);
     }
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void commitOutcomingMailsAsNotified(List<NotifyEntity> list) {
-        if (list.isEmpty()) {
-            return;
-        }
-
         list.forEach(notify -> {
             OutcomingMailEntity mail = outcomingMailRepository.getOne(notify.getSourceUid());
             Date nextNotificationDate = calculateNextNotificationDate(dateService.nowDate(), mail.getSentDate(), remindSteps);

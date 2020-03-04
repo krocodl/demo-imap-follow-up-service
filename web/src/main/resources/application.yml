@@ -6,7 +6,7 @@ server:
 
 imap:
   username: followUpDemoBox@gmail.com
-  password:
+  password: followUpDemo35
   server: imap.gmail.com
   port: 993
   inbox: inbox

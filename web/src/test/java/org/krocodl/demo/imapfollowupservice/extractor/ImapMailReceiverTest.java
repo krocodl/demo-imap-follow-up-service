@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 
 import javax.mail.Message;
 import javax.mail.internet.MimeMessage;
-import java.util.Date;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,32 +33,46 @@ public class ImapMailReceiverTest extends AbstractServiceTest {
     @Autowired
     private MockedMailServer mailServer;
 
+    private long getMaxMsgUid(List<ExtractedMessage> msgs) {
+        return msgs.stream().map(ExtractedMessage::getMsgUid).max(Long::compareTo).orElse(0L);
+
+    }
+
     @Test
     public void getReceivedSentMessagesTest() throws Exception {
 
-        Date date1 = new Date();
-        Thread.sleep(1000);
-        mailServer.putToInbox(createMail());
-        mailServer.putToOutbox(createMail());
-
-        Date date2 = new Date();
-        Thread.sleep(1000);
-        mailServer.putToInbox(createMail());
-        mailServer.putToOutbox(createMail());
-
-        Date date3 = new Date();
-
-        Pair<List<ExtractedMessage>, List<ExtractedMessage>> content = imapMailReceiver.getReceivedSentMessages(date3, date3);
+        Pair<List<ExtractedMessage>, List<ExtractedMessage>> content = imapMailReceiver.getReceivedSentMessages(0, 0);
         assertThat(content.getLeft()).hasSize(0);
         assertThat(content.getRight()).hasSize(0);
 
-        content = imapMailReceiver.getReceivedSentMessages(date2, date2);
+        mailServer.putToInbox(createMail());
+        mailServer.putToOutbox(createMail());
+
+        content = imapMailReceiver.getReceivedSentMessages(0, 0);
         assertThat(content.getLeft()).hasSize(1);
         assertThat(content.getRight()).hasSize(1);
 
-        content = imapMailReceiver.getReceivedSentMessages(date1, date1);
+        long inMax = getMaxMsgUid(content.getLeft());
+        long outMax = getMaxMsgUid(content.getLeft());
+
+        content = imapMailReceiver.getReceivedSentMessages(inMax, outMax);
+        assertThat(content.getLeft()).hasSize(0);
+        assertThat(content.getRight()).hasSize(0);
+
+        mailServer.putToInbox(createMail());
+        mailServer.putToOutbox(createMail());
+
+        content = imapMailReceiver.getReceivedSentMessages(0, 0);
         assertThat(content.getLeft()).hasSize(2);
         assertThat(content.getRight()).hasSize(2);
+
+        content = imapMailReceiver.getReceivedSentMessages(inMax, outMax);
+        assertThat(content.getLeft()).hasSize(1);
+        assertThat(content.getRight()).hasSize(1);
+
+        content = imapMailReceiver.getReceivedSentMessages(inMax + 1, outMax + 1);
+        assertThat(content.getLeft()).hasSize(0);
+        assertThat(content.getRight()).hasSize(0);
     }
 
     private MimeMessage createMail() throws Exception {

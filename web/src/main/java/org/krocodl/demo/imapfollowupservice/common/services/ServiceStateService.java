@@ -1,18 +1,17 @@
 package org.krocodl.demo.imapfollowupservice.common.services;
 
-import org.krocodl.demo.imapfollowupservice.common.utils.DateFormater;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Example;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
 import java.util.List;
 
 public interface ServiceStateService extends JpaRepository<ServiceStateEntity, Integer> {
 
-    String LAST_SEND_DATE = "lastSendDate";
-    String LAST_RECEIVE_DATE = "lastReveiceDate";
+    String LAST_SEND_UID = "lastSendUid";
+    String LAST_RECEIVE_UID = "lastReveiceUid";
 
     @Transactional(propagation = Propagation.MANDATORY)
     default void setState(String paramName, String value) {
@@ -32,25 +31,21 @@ public interface ServiceStateService extends JpaRepository<ServiceStateEntity, I
         return params.isEmpty() ? defValue : params.get(0).getValue();
     }
 
-    default Date getLastSendDate(Date defValue) {
-        Date ret = DateFormater.parse(getState(LAST_SEND_DATE, null));
-        return ret == null ? defValue : ret;
+    default long getLastSendUid(long defValue) {
+        String str = getState(LAST_SEND_UID, null);
+        return StringUtils.isEmpty(str) ? defValue : Long.parseLong(str);
     }
 
-    default void setLastSendDate(Date value) {
-        if (value != null) {
-            setState(LAST_SEND_DATE, DateFormater.formatTime(value));
-        }
+    default void setLastSendUid(long value) {
+        setState(LAST_SEND_UID, String.valueOf(value));
     }
 
-    default Date getLastReceiveDate(Date defValue) {
-        Date ret = DateFormater.parse(getState(LAST_RECEIVE_DATE, null));
-        return ret == null ? defValue : ret;
+    default long getLastReceiveUid(long defValue) {
+        String str = getState(LAST_RECEIVE_UID, null);
+        return StringUtils.isEmpty(str) ? defValue : Long.parseLong(str);
     }
 
-    default void setLastReceiveDate(Date value) {
-        if (value != null) {
-            setState(LAST_RECEIVE_DATE, DateFormater.formatTime(value));
-        }
+    default void setLastReceiveUid(long value) {
+        setState(LAST_RECEIVE_UID, String.valueOf(value));
     }
 }

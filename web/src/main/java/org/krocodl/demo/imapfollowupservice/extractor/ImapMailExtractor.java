@@ -1,14 +1,11 @@
 package org.krocodl.demo.imapfollowupservice.extractor;
 
-import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.krocodl.demo.imapfollowupservice.common.datamodel.BatchOfMails;
 import org.krocodl.demo.imapfollowupservice.common.services.DateService;
 import org.krocodl.demo.imapfollowupservice.common.services.ServiceStateService;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 
@@ -29,21 +26,34 @@ public class ImapMailExtractor implements MailExtractor {
 
 
     public BatchOfMails extractMails(int startingFromDaysOffset) {
-        Calendar earliestTime = dateService.nowCalendar();
-        earliestTime.setTime(DateUtils.truncate(earliestTime.getTime(), Calendar.DATE));
-        earliestTime.add(Calendar.DAY_OF_YEAR, startingFromDaysOffset);
+        long lastReceiveUid = serviceState.getLastReceiveUid(0);
+        long lastSendUid = serviceState.getLastSendUid(0);
 
-        Date lastReceiveDate = serviceState.getLastReceiveDate(earliestTime.getTime());
-        Date lastSendDate = serviceState.getLastSendDate(earliestTime.getTime());
+        if (lastReceiveUid == 0 || lastSendUid == 0) {
+            Pair<Long, Long> initUids = imapTransport.getInitialMessageUid(startingFromDaysOffset);
+            lastReceiveUid = initUids.getLeft();
+            lastSendUid = initUids.getRight();
+        }
 
-        Pair<List<ExtractedMessage>, List<ExtractedMessage>> messages = imapTransport.getReceivedSentMessages(lastReceiveDate, lastSendDate);
+        Pair<List<ExtractedMessage>, List<ExtractedMessage>> messages = imapTransport.getReceivedSentMessages(lastReceiveUid, lastSendUid);
 
         BatchOfMails batch = new BatchOfMails();
         messages.getLeft().forEach(msg -> batch.addIncomingMail(
-                msg.getUid(), msg.getFrom(), msg.getSubject(), msg.getReceivedDate(), msg.getInReplyTo()
+                msg.getMsgUid(),
+                msg.getUid(),
+                msg.getFrom(),
+                msg.getSubject(),
+                msg.getReceivedDate(),
+                msg.getInReplyTo()
         ));
         messages.getRight().forEach(msg -> batch.addOutcomingMail(
-                msg.getUid(), msg.getTo(), msg.getSubject(), msg.getSentDate(), msg.getQueueId(), msg.getReceivedDate()
+                msg.getMsgUid(),
+                msg.getUid(),
+                msg.getTo(),
+                msg.getSubject(),
+                msg.getSentDate(),
+                msg.getQueueId(),
+                msg.getReceivedDate()
         ));
 
         return batch;

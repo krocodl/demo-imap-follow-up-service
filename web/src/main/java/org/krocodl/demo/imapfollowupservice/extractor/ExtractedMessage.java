@@ -1,5 +1,6 @@
 package org.krocodl.demo.imapfollowupservice.extractor;
 
+import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPMessage;
 import org.krocodl.demo.imapfollowupservice.common.utils.MailUtils;
 import org.springframework.util.StringUtils;
@@ -21,14 +22,16 @@ public class ExtractedMessage {
     private String uid;
     private String inReplyTo;
     private Long queueId;
+    private Long msgUid;
 
-    public ExtractedMessage(final Message message) {
+    public ExtractedMessage(final IMAPFolder folder, final Message message) {
         try {
             this.to = ((InternetAddress) message.getAllRecipients()[0]).getAddress();
             this.subject = message.getSubject();
             this.sentDate = message.getSentDate();
             this.receivedDate = message.getReceivedDate();
             this.uid = ((IMAPMessage) message).getMessageID();
+            this.msgUid = folder.getUID(message);
 
             from = message.getFrom()[0].toString();
             if (from.contains("<") && from.endsWith(">")) {
@@ -74,5 +77,9 @@ public class ExtractedMessage {
 
     public Long getQueueId() {
         return queueId;
+    }
+
+    public Long getMsgUid() {
+        return msgUid;
     }
 }

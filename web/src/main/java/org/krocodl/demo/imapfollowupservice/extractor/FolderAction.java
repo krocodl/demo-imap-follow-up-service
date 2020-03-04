@@ -1,9 +1,9 @@
 package org.krocodl.demo.imapfollowupservice.extractor;
 
-import javax.mail.Folder;
+import com.sun.mail.imap.IMAPFolder;
 
 @FunctionalInterface
 public interface FolderAction<R> {
 
-    R execute(Folder folder) throws Exception;
+    R execute(IMAPFolder folder) throws Exception;
 }

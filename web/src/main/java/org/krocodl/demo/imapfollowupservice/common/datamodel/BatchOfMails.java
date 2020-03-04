@@ -10,10 +10,10 @@ public class BatchOfMails {
 
     private List<IncomingMailDto> incomingMails = new ArrayList<>();
     private Map<String, OutcomingMailEntity> outcomingMails = new HashMap<>();
-    private Date lastSendDate = null;
-    private Date lastReceiveDate = null;
+    private long lastSendUid = 0;
+    private long lastReceiveUid = 0;
 
-    public void addIncomingMail(String uid, String from, String subject, Date receivedDate, String inReplyTo) {
+    public void addIncomingMail(long muid, String uid, String from, String subject, Date receivedDate, String inReplyTo) {
         IncomingMailDto mail = new IncomingMailDto();
         mail.setFrom(from);
         mail.setSubject(subject);
@@ -21,11 +21,10 @@ public class BatchOfMails {
         mail.setReceivingDate(receivedDate);
         incomingMails.add(mail);
 
-        lastReceiveDate = lastReceiveDate == null || receivedDate.after(lastReceiveDate)
-                ? receivedDate : lastSendDate;
+        lastReceiveUid = Math.max(lastReceiveUid, muid);
     }
 
-    public void addOutcomingMail(String uid, String to, String subject, Date sentDate, Long queueId, Date receivingDate) {
+    public void addOutcomingMail(long muid, String uid, String to, String subject, Date sentDate, Long queueId, Date receivingDate) {
         OutcomingMailEntity mail = new OutcomingMailEntity();
         mail.setQueueId(queueId);
         mail.setSentDate(sentDate);
@@ -34,8 +33,7 @@ public class BatchOfMails {
         mail.setUid(uid);
         outcomingMails.put(uid, mail);
 
-        lastSendDate = lastSendDate == null || receivingDate.after(lastSendDate)
-                ? receivingDate : lastSendDate;
+        lastSendUid = Math.max(lastSendUid, muid);
     }
 
     public List<IncomingMailDto> getIncomingMails() {
@@ -46,11 +44,11 @@ public class BatchOfMails {
         return outcomingMails;
     }
 
-    public Date getLastSendDate() {
-        return lastSendDate;
+    public long getLastSendUid() {
+        return lastSendUid;
     }
 
-    public Date getLastReceiveDate() {
-        return lastReceiveDate;
+    public long getLastReceiveUid() {
+        return lastReceiveUid;
     }
 }

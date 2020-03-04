@@ -102,17 +102,16 @@ public class BusinessProcessService {
 
     protected void executeRawBusinessProcess() {
         BatchOfMails batch = extractor.extractMails(-analiser.getMaximumRemindPerionsForOutcomingMails());
-
-        int savedCount = transactionalService.executeInNewTransaction(() -> analiser.saveOutcomingMails(batch), "Saving batch of received mails");
+        int savedCount = transactionalService.executeInNewTransaction(
+                () -> analiser.saveOutcomingMails(batch), "Saving batch of received mails");
         LOGGER.info("{} outcoming messages were saved", savedCount);
 
-        int lostCount = transactionalService.executeInNewTransaction(() -> {
-            List<Long> sentQueueIds = batch.getOutcomingMails().values().stream().
-                    map(OutcomingMailEntity::getQueueId).
-                    filter(Objects::nonNull).
-                    collect(Collectors.toList());
-            return notifyService.compensateBrokenSendingTransaction(sentQueueIds);
-        }, "Removing lost messages from the notify queue");
+        List<Long> sentQueueIds = batch.getOutcomingMails().values().stream().
+                map(OutcomingMailEntity::getQueueId).
+                filter(Objects::nonNull).
+                collect(Collectors.toList());
+        int lostCount = transactionalService.executeInNewTransaction(() ->
+                notifyService.compensateBrokenSendingTransaction(sentQueueIds), "Removing lost messages from the notify queue");
         LOGGER.info(" Found {} lost messages in the notify queue", lostCount);
 
         List<String> matchedMailIds = analiser.prepareMailsMatching(batch);

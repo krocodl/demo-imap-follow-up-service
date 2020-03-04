@@ -66,10 +66,6 @@ public class NotifyServiceImpl implements NotifyService {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void addNotificationsToQueue(List<NotifyEntity> list) {
-        if (list.isEmpty()) {
-            return;
-        }
-
         list.forEach(notifyEntity -> {
             notifyEntity.setId(null);
             notifyEntity.setWasSent(false);

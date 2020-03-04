@@ -46,13 +46,9 @@ In this case, a distributed log is better than a message queue due to already av
 Also, similar functionality can be implemented based on database (some rough implementation is performed by the demo project) but less effectively
 ** if we are planning to deal with big data volumes it is better to think about data sharding in advance.
 It is a quite good case for sharding, because we don't deal with long-living data.
-
 * even in the case of one service, splitting the whole business process into several tasks, activated asynchronously by internal events one after another.
 Different execution (threads count, for example) and retry policies (count, pauses for example) for each task.
-
 * take into account different timezones of user/recipients and service
-* it is necessary to more carefully investigate the time-related query features/limitations of IMAP protocol.
-
 * general for database access
 ** optimize all concerning tables for high concurrent access.
 For oracle, it includes, for example, setting INITRANS and MAXTRANS parameters.

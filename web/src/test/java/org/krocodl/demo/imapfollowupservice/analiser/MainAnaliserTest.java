@@ -1,6 +1,5 @@
 package org.krocodl.demo.imapfollowupservice.analiser;
 
-import org.apache.commons.lang3.time.DateUtils;
 import org.junit.Test;
 import org.krocodl.demo.imapfollowupservice.common.AbstractServiceTest;
 import org.krocodl.demo.imapfollowupservice.common.datamodel.BatchOfMails;
@@ -47,57 +46,49 @@ public class MainAnaliserTest extends AbstractServiceTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void saveOutcomingMailsTest() {
-        Calendar calendar = Calendar.getInstance();
-        Date date1 = calendar.getTime();
-        calendar.add(Calendar.MINUTE, 1);
-        Date date2 = calendar.getTime();
-        calendar.add(Calendar.MINUTE, 1);
-        Date date3 = calendar.getTime();
-        calendar.add(Calendar.MINUTE, 1);
+        Date now = new Date();
 
         BatchOfMails batch = new BatchOfMails();
-        batch.addOutcomingMail("1", "t1", "s1", date1, null, date1);
-        batch.addOutcomingMail("2", "t2", "s2", date2, 3L, date2);
+        assertThat(serviceState.getLastSendUid(0)).isEqualTo(0L);
+
+        batch.addOutcomingMail(1, "1", "t1", "s1", now, null, now);
+        batch.addOutcomingMail(2, "2", "t2", "s2", now, 3L, now);
+        assertThat(batch.getLastSendUid()).isEqualTo(2);
 
         assertThat(analiser.saveOutcomingMails(batch)).isEqualTo(2);
         assertThat(outcomingMailRepository.findAll()).hasSize(1);
         assertThat(outcomingMailRepository.findAll().get(0).getUid()).isEqualTo("1");
         assertThat(outcomingMailRepository.findAll().get(0).getNotifyDate()).isNotNull();
-        assertThat(serviceState.getLastSendDate(null)).isEqualTo(DateUtils.truncate(date2, Calendar.SECOND));
+        assertThat(serviceState.getLastSendUid(0)).isEqualTo(2);
 
         batch = new BatchOfMails();
-        batch.addOutcomingMail("1", "t1", "s1", date1, null, date1);
-        batch.addOutcomingMail("3", "t3", "s3", date3, null, date3);
+        batch.addOutcomingMail(4, "1", "t1", "s1", now, null, now);
+        batch.addOutcomingMail(3, "3", "t3", "s3", now, null, now);
+        assertThat(batch.getLastSendUid()).isEqualTo(4);
 
         assertThat(analiser.saveOutcomingMails(batch)).isEqualTo(1);
         assertThat(outcomingMailRepository.findAll()).hasSize(2);
-        assertThat(serviceState.getLastSendDate(null)).isEqualTo(DateUtils.truncate(date3, Calendar.SECOND));
+        assertThat(serviceState.getLastSendUid(0)).isEqualTo(4);
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void prepareAndApplyMailsMatchingTest() {
-        Calendar calendar = Calendar.getInstance();
-        Date date1 = calendar.getTime();
+        Date now = new Date();
 
         BatchOfMails batch = new BatchOfMails();
-        batch.addOutcomingMail("1", "t1", "s1", date1, null, date1);
-        batch.addOutcomingMail("2", "t2", "s2", date1, null, date1);
-        batch.addOutcomingMail("3", "t3", "s3", date1, null, date1);
+        batch.addOutcomingMail(1, "1", "t1", "s1", now, null, now);
+        batch.addOutcomingMail(2, "2", "t2", "s2", now, null, now);
+        batch.addOutcomingMail(3, "3", "t3", "s3", now, null, now);
 
         assertThat(analiser.saveOutcomingMails(batch)).isEqualTo(3);
         assertThat(outcomingMailRepository.findAll()).hasSize(3);
 
-        calendar.add(Calendar.MINUTE, 1);
-        Date date2 = calendar.getTime();
 
         batch = new BatchOfMails();
-        batch.addIncomingMail("4", "f4", "s4", date2, "1");
-        batch.addIncomingMail("5", "f5", "RE: s2", date2, null);
-
-        calendar.add(Calendar.MINUTE, 1);
-        Date date3 = calendar.getTime();
-        batch.addIncomingMail("6", "f6", "s6", date3, "8");
+        batch.addIncomingMail(1, "4", "f4", "s4", now, "1");
+        batch.addIncomingMail(2, "5", "f5", "RE: s2", now, null);
+        batch.addIncomingMail(3, "6", "f6", "s6", now, "8");
 
         List<String> foundIds = analiser.prepareMailsMatching(batch);
         assertThat(foundIds).containsExactly("1", "2");
@@ -106,17 +97,16 @@ public class MainAnaliserTest extends AbstractServiceTest {
 
         assertThat(outcomingMailRepository.findAll()).hasSize(1);
         assertThat(outcomingMailRepository.findAll().get(0).getUid()).isEqualTo("3");
-        assertThat(serviceState.getLastReceiveDate(null)).isEqualTo(DateUtils.truncate(date3, Calendar.SECOND));
+        assertThat(serviceState.getLastReceiveUid(0)).isEqualTo(3);
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createAndCommitNotificationsFromOutcompingMailsTest() {
-        Calendar calendar = Calendar.getInstance();
-        Date date1 = calendar.getTime();
+        Date now = new Date();
 
         BatchOfMails batch = new BatchOfMails();
-        batch.addOutcomingMail("1", "t1", "s1", date1, null, date1);
+        batch.addOutcomingMail(1, "1", "t1", "s1", now, null, now);
 
         assertThat(analiser.saveOutcomingMails(batch)).isEqualTo(1);
         assertThat(outcomingMailRepository.findAll()).hasSize(1);
@@ -131,7 +121,7 @@ public class MainAnaliserTest extends AbstractServiceTest {
 
         OutcomingMailEntity mail = outcomingMailRepository.findAll().get(0);
         Date notifyDate = mail.getNotifyDate();
-        assertThat(notifyDate).isAfter(date1);
+        assertThat(notifyDate).isAfter(now);
 
         NotifyEntity notification = notifications.get(0);
         assertThat(notification.getSourceUid()).isEqualTo(mail.getUid());

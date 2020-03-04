@@ -39,14 +39,19 @@ public class ImapMailExtractorTest extends AbstractServiceTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void extractMailsTest() throws Exception {
 
-        Date date1 = new Date();
-        Thread.sleep(1000);
-
         MimeMessage mailOut = smtpMailSender.createMimeMessage();
         mailOut.setFrom(username);
         mailOut.setSentDate(new Date());
         mailOut.setRecipients(Message.RecipientType.TO, username);
-        mailOut.setSubject("subjectOut");
+        mailOut.setSubject("subjectOut1");
+        mailOut.setText("out");
+        mailServer.putToOutbox(mailOut);
+
+        mailOut = smtpMailSender.createMimeMessage();
+        mailOut.setFrom(username);
+        mailOut.setSentDate(new Date());
+        mailOut.setRecipients(Message.RecipientType.TO, username);
+        mailOut.setSubject("subjectOut2");
         mailOut.setText("out");
         mailServer.putToOutbox(mailOut);
 
@@ -54,27 +59,20 @@ public class ImapMailExtractorTest extends AbstractServiceTest {
         mailIn.setFrom(username);
         mailIn.setSentDate(new Date());
         mailIn.setRecipients(Message.RecipientType.TO, username);
-        mailIn.setSubject("subjectIn");
+        mailIn.setSubject("subjectIn1");
         mailIn.setText("in");
         mailServer.putToInbox(mailIn);
 
-        Thread.sleep(1000);
-        Date date2 = new Date();
+        mailIn = smtpMailSender.createMimeMessage();
+        mailIn.setFrom(username);
+        mailIn.setSentDate(new Date());
+        mailIn.setRecipients(Message.RecipientType.TO, username);
+        mailIn.setSubject("subjectIn2");
+        mailIn.setText("in");
+        mailServer.putToInbox(mailIn);
 
-        serviceState.setLastReceiveDate(date2);
-        serviceState.setLastSendDate(date2);
         BatchOfMails batch = mailExtractor.extractMails(-1);
-        assertThat(batch.getIncomingMails()).hasSize(0);
-        assertThat(batch.getOutcomingMails()).hasSize(0);
-        assertThat(batch.getLastReceiveDate()).isNull();
-        assertThat(batch.getLastSendDate()).isNull();
-
-        serviceState.setLastReceiveDate(date1);
-        serviceState.setLastSendDate(date1);
-        batch = mailExtractor.extractMails(-1);
-        assertThat(batch.getIncomingMails()).hasSize(1);
-        assertThat(batch.getOutcomingMails()).hasSize(1);
-        assertThat(batch.getLastReceiveDate()).isAfter(date1);
-        assertThat(batch.getLastSendDate()).isAfter(date1);
+        assertThat(batch.getIncomingMails()).hasSize(2);
+        assertThat(batch.getOutcomingMails()).hasSize(2);
     }
 }

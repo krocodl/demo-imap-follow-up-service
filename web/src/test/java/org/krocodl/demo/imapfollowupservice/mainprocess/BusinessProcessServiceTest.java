@@ -46,7 +46,6 @@ public class BusinessProcessServiceTest extends AbstractServiceTest {
         businessProcessService.executeRawBusinessProcess();
         assertThat(mailServer.getServer().getReceivedMessages()).hasSize(4);
 
-        //Thread.sleep(1000);
         mail = produceMimeMessage(4, username, SOME_CORRESPONDENT_MAIL);
         mail.setSubject("RE: subject1");
         mailServer.putToInbox(mail);
