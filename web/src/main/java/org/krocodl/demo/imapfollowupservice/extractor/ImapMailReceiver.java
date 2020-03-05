@@ -42,7 +42,7 @@ public class ImapMailReceiver {
     public static final String IMAP_OUTBOX_NAME = "imap.outbox";
     public static final String SMTP_SERVER = "smtp.server";
     public static final String SMTP_PORT = "smtp.port";
-    public static final long MAX_FOLDER_MSG_UID = Long.MAX_VALUE - 1;
+    private static final long MAX_FOLDER_MSG_UID = Long.MAX_VALUE - 1;
     private static final Logger LOGGER = LoggerFactory.getLogger(ImapMailReceiver.class);
     private static final String ID_ATTRIBUTE_OUTBOX_FOLDER = "\\Sent";
     private static final String STD_AUTO_OUTBOX_FOLDER = "auto";
@@ -95,7 +95,7 @@ public class ImapMailReceiver {
         }
     }
 
-    public int getMessagesCount(String boxName) throws Exception {
+    public int getMessagesCount(String boxName) {
         return doWithFolder(boxName, Folder::getMessageCount, "receiving count in " + boxName);
     }
 
@@ -140,18 +140,18 @@ public class ImapMailReceiver {
     }
 
     private List<String> getFolders() {
-        return doWithStore(store -> {
-            return Stream.of(store.getDefaultFolder().list("*")).map(folder -> {
-                String attributes;
-                try {
-                    attributes = StringUtils.join(((IMAPFolder) folder).getAttributes());
-                } catch (MessagingException ex) {
-                    throw new ImapTransportException("can't get attributes of " + folder.getName(), ex);
-                }
-                return folder.getName() + "[" + attributes + "]";
-            }).collect(Collectors.toList());
+        return doWithStore(store ->
+                        Stream.of(store.getDefaultFolder().list("*")).map(folder -> {
+                            String attributes;
+                            try {
+                                attributes = StringUtils.join(((IMAPFolder) folder).getAttributes());
+                            } catch (MessagingException ex) {
+                                throw new ImapTransportException("can't get attributes of " + folder.getName(), ex);
+                            }
+                            return folder.getName() + "[" + attributes + "]";
+                        }).collect(Collectors.toList())
 
-        }, "getting list of folders");
+                , "getting list of folders");
     }
 
     private void fixAutoOutboxName() {
@@ -170,8 +170,7 @@ public class ImapMailReceiver {
         }, "guessing outo box name");
     }
 
-    public <R> R doWithStore(StoreAction<R> action, String desc) {
-        Folder folder = null;
+    private <R> R doWithStore(StoreAction<R> action, String desc) {
         Store store = getConnectedStore();
         try {
             return action.execute(store);

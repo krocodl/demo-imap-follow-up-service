@@ -37,7 +37,9 @@ public interface ServiceStateService extends JpaRepository<ServiceStateEntity, I
     }
 
     default void setLastSendUid(long value) {
-        setState(LAST_SEND_UID, String.valueOf(value));
+        if (value > 0) {
+            setState(LAST_SEND_UID, String.valueOf(value));
+        }
     }
 
     default long getLastReceiveUid(long defValue) {
@@ -46,6 +48,8 @@ public interface ServiceStateService extends JpaRepository<ServiceStateEntity, I
     }
 
     default void setLastReceiveUid(long value) {
-        setState(LAST_RECEIVE_UID, String.valueOf(value));
+        if (value > 0) {
+            setState(LAST_RECEIVE_UID, String.valueOf(value));
+        }
     }
 }

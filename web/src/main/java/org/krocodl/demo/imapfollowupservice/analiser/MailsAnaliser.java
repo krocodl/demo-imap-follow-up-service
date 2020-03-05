@@ -11,7 +11,7 @@ public interface MailsAnaliser {
 
     List<String> prepareMailsMatching(BatchOfMails batchOfMails);
 
-    void applyMailsMatching(BatchOfMails batchOfMails, List<String> foundMails);
+    void applyMailsMatching(long lastReceiveUid, List<String> foundMails);
 
     void commitOutcomingMailsAsNotified(List<NotifyEntity> list);
 

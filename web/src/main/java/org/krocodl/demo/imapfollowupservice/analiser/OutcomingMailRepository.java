@@ -5,15 +5,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
 public interface OutcomingMailRepository extends JpaRepository<OutcomingMailEntity, String> {
-
-    //@FIXME on Oracle with more then 1000 mail will be error, use special dialect
-    @Query("select m.uid from OutcomingMailEntity m where m.uid in ?1")
-    List<String> findDuplicates(Collection ids);
 
     @Query("select m.uid from OutcomingMailEntity m where m.uid = ?1 or m.subject like ?2")
     List<String> matchWithReplyToOrSubject(String uid, String subjectFilter);

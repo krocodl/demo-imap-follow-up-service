@@ -27,9 +27,10 @@ public class MailsAnaliserImpl implements MailsAnaliser {
     private final ServiceStateService stateService;
     private final List<MailsMatchingStrategy> matchStrategies;
     private final DateService dateService;
+    private final List<Integer> remindSteps = new ArrayList<>();
+
     @Value("${analiser.remindStrategy}")
     private String remindStrategy;
-    private List<Integer> remindSteps = new ArrayList<>();
 
     public MailsAnaliserImpl(final OutcomingMailRepository outcomingMailRepository, final ServiceStateService stateService,
                              final List<MailsMatchingStrategy> matchStrategies, final DateService dateService) {
@@ -70,11 +71,6 @@ public class MailsAnaliserImpl implements MailsAnaliser {
             return 0;
         }
 
-        /**
-         * due to issues with IMAP query we have in any case to remove duplicates
-         */
-        outcomingMailRepository.findDuplicates(batchOfMails.getOutcomingMails().keySet()).forEach(uid -> batchOfMails.getOutcomingMails().remove(uid));
-
         batchOfMails.getOutcomingMails().values().stream().filter(m -> m.getQueueId() == null).forEach(entity -> {
             Date notificationDate = calculateNextNotificationDate(dateService.nowDate(), entity.getSentDate(), remindSteps);
             if (notificationDate != null) {
@@ -94,17 +90,17 @@ public class MailsAnaliserImpl implements MailsAnaliser {
         if (batchOfMails.getIncomingMails().isEmpty()) {
             return foundMails;
         }
-        batchOfMails.getIncomingMails().forEach(mail -> matchStrategies.forEach(strategy -> {
-            foundMails.addAll(strategy.makeMatch(mail));
-        }));
+        batchOfMails.getIncomingMails().forEach(mail -> matchStrategies.forEach(strategy ->
+                foundMails.addAll(strategy.makeMatch(mail))
+        ));
         return foundMails;
     }
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public void applyMailsMatching(BatchOfMails batchOfMails, List<String> foundMails) {
-        stateService.setLastReceiveUid(batchOfMails.getLastReceiveUid());
+    public void applyMailsMatching(long lastReceiveUid, List<String> foundMails) {
         outcomingMailRepository.removeByIds(foundMails);
+        stateService.setLastReceiveUid(lastReceiveUid);
     }
 
     @Override
@@ -130,7 +126,7 @@ public class MailsAnaliserImpl implements MailsAnaliser {
             notify.setWasSent(false);
             notify.setTo(mail.getTo());
             notify.setSourceUid(mail.getUid());
-            notify.setSubject("Missed letter notification");
+            notify.setSubject("Missed letter notification <" + mail.getSubject() + ">");
             notify.setText("You did not onswer on message '" + mail.getSubject() + "' from " + DateFormater.formatTime(mail.getSentDate()));
             ret.add(notify);
         });

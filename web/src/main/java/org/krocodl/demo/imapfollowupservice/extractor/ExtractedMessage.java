@@ -12,8 +12,8 @@ import java.util.Map;
 
 public class ExtractedMessage {
 
-    public static final String IN_REPLY_TO = "In-Reply-To";
     public static final String FOLLOW_UP_QUEUE_ID = "follow-up-queue-id";
+    private static final String IN_REPLY_TO = "In-Reply-To";
     private String from;
     private String to;
     private String subject;

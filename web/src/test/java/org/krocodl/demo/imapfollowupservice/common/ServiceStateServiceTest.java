@@ -10,8 +10,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ServiceStateServiceTest extends AbstractServiceTest {
 
-    public static final String SOME_VALUE = "someValue";
-    public static final String ANOTHER_VALUE = "anotherValue";
+    private static final String SOME_VALUE = "someValue";
+    private static final String ANOTHER_VALUE = "anotherValue";
     private static final String SOME_PARAM = "someParam";
     @Autowired
     private ServiceStateService service;

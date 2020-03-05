@@ -1,9 +1,11 @@
 package org.krocodl.demo.imapfollowupservice.mainprocess;
 
 import org.junit.Test;
+import org.krocodl.demo.imapfollowupservice.analiser.OutcomingMailRepository;
 import org.krocodl.demo.imapfollowupservice.common.AbstractServiceTest;
 import org.krocodl.demo.imapfollowupservice.common.services.DateService;
 import org.krocodl.demo.imapfollowupservice.mocks.MockedMailServer;
+import org.krocodl.demo.imapfollowupservice.notifier.NotifyRepository;
 import org.krocodl.demo.imapfollowupservice.notifier.SmtpMailSender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,7 +19,8 @@ import static org.krocodl.demo.imapfollowupservice.extractor.ImapMailReceiver.IM
 
 public class BusinessProcessServiceTest extends AbstractServiceTest {
 
-    public static final String SOME_CORRESPONDENT_MAIL = "some@gmail.com";
+    private static final String SOME_CORRESPONDENT_MAIL = "some@gmail.com";
+
     @Autowired
     private SmtpMailSender smtpMailSender;
 
@@ -33,6 +36,12 @@ public class BusinessProcessServiceTest extends AbstractServiceTest {
     @Autowired
     private BusinessProcessService businessProcessService;
 
+    @Autowired
+    private OutcomingMailRepository outcomingMailRepository;
+
+    @Autowired
+    private NotifyRepository notifyRepository;
+
     @Test
     public void commonUseCaseTest() throws Exception {
         mailServer.putToOutbox(produceMimeMessage(0, SOME_CORRESPONDENT_MAIL, username));
@@ -45,6 +54,7 @@ public class BusinessProcessServiceTest extends AbstractServiceTest {
 
         businessProcessService.executeRawBusinessProcess();
         assertThat(mailServer.getServer().getReceivedMessages()).hasSize(4);
+        assertThat(outcomingMailRepository.count()).isEqualTo(2);
 
         mail = produceMimeMessage(4, username, SOME_CORRESPONDENT_MAIL);
         mail.setSubject("RE: subject1");
@@ -53,9 +63,12 @@ public class BusinessProcessServiceTest extends AbstractServiceTest {
         dateService.setDaysOffset(4);
         businessProcessService.executeRawBusinessProcess();
         assertThat(mailServer.getServer().getReceivedMessages()).hasSize(5 + 1);
+        assertThat(outcomingMailRepository.count()).isEqualTo(1);
+
 
         businessProcessService.executeRawBusinessProcess();
         assertThat(mailServer.getServer().getReceivedMessages()).hasSize(5 + 1);
+        assertThat(outcomingMailRepository.count()).isEqualTo(1);
 
         dateService.setDaysOffset(12);
         businessProcessService.executeRawBusinessProcess();

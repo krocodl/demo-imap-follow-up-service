@@ -25,11 +25,11 @@ import static org.krocodl.demo.imapfollowupservice.common.utils.MailUtils.SMTP;
 @TestConfiguration
 public class MockedMailServer {
 
-    private static GreenMail server;
-    private static int freeImapPort = TestTools.findRandomOpenPortOnAllLocalInterfaces();
-    private static int freeSmtpPort = freeImapPort + 1;
-    private static String outFolderName;
-    private static String inFolderName;
+    private final static GreenMail server;
+    private final static int freeImapPort = TestTools.findRandomOpenPortOnAllLocalInterfaces();
+    private final static int freeSmtpPort = freeImapPort + 1;
+    private final static String outFolderName;
+    private final static String inFolderName;
 
 
     static {

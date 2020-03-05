@@ -62,13 +62,12 @@ public class MainAnaliserTest extends AbstractServiceTest {
         assertThat(serviceState.getLastSendUid(0)).isEqualTo(2);
 
         batch = new BatchOfMails();
-        batch.addOutcomingMail(4, "1", "t1", "s1", now, null, now);
         batch.addOutcomingMail(3, "3", "t3", "s3", now, null, now);
-        assertThat(batch.getLastSendUid()).isEqualTo(4);
+        assertThat(batch.getLastSendUid()).isEqualTo(3);
 
         assertThat(analiser.saveOutcomingMails(batch)).isEqualTo(1);
         assertThat(outcomingMailRepository.findAll()).hasSize(2);
-        assertThat(serviceState.getLastSendUid(0)).isEqualTo(4);
+        assertThat(serviceState.getLastSendUid(0)).isEqualTo(3);
     }
 
     @Test
@@ -93,7 +92,7 @@ public class MainAnaliserTest extends AbstractServiceTest {
         List<String> foundIds = analiser.prepareMailsMatching(batch);
         assertThat(foundIds).containsExactly("1", "2");
 
-        analiser.applyMailsMatching(batch, foundIds);
+        analiser.applyMailsMatching(batch.getLastReceiveUid(), foundIds);
 
         assertThat(outcomingMailRepository.findAll()).hasSize(1);
         assertThat(outcomingMailRepository.findAll().get(0).getUid()).isEqualTo("3");

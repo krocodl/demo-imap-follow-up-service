@@ -55,9 +55,9 @@ public class NotifyServiceTest extends AbstractServiceTest {
         entityManager.createQuery("update NotifyEntity n set n.wasSent = TRUE where n.sourceUid=?1").setParameter(1, "s2").executeUpdate();
         notifyService.compensateBrokenSendingTransaction(Collections.singletonList(id1));
         assertThat(notifyRepository.findAll()).hasSize(2);
-        notifyRepository.findAll().forEach(notify -> {
-            assertThat(notify.isWasSent()).isFalse();
-        });
+        notifyRepository.findAll().forEach(notify ->
+                assertThat(notify.isWasSent()).isFalse()
+        );
 
         notifyService.deleteNotificationsForMatchedMails(Collections.singletonList("s2"));
         assertThat(notifyRepository.findAll()).hasSize(1);

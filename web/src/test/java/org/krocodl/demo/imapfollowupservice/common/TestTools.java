@@ -8,7 +8,7 @@ import java.util.Properties;
 
 public final class TestTools {
 
-    private static Properties testProperies;
+    private static final Properties testProperies;
 
     static {
         YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();

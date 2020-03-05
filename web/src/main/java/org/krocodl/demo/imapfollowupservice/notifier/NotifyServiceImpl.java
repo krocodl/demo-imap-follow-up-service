@@ -79,7 +79,7 @@ public class NotifyServiceImpl implements NotifyService {
     @Transactional(propagation = Propagation.MANDATORY)
     public int compensateBrokenSendingTransaction(List<Long> sentQueueIds) {
         int ret = notifyRepository.removeMessagesWithIds(sentQueueIds);
-        notifyRepository.marAllkAsNotSent();
+        notifyRepository.marAllAsNotSent();
         return ret;
     }
 
@@ -128,7 +128,7 @@ public class NotifyServiceImpl implements NotifyService {
             notifyRepository.markAsSent(partition.stream().map(NotifyEntity::getId).collect(Collectors.toList()));
         }, " mark notification as sent from partition " + partitionId);
 
-        List<Long> sentIds = sendNotifications(partition);
+        List<Long> sentIds = sendNotificationsWithSmtpTransport(partition);
 
         transactionalService.executeInNewTransaction(() -> {
             notifyRepository.removeMessagesWithIds(sentIds);
@@ -137,7 +137,7 @@ public class NotifyServiceImpl implements NotifyService {
         return sentIds.size();
     }
 
-    private List<Long> sendNotifications(List<NotifyEntity> notifications) {
+    private List<Long> sendNotificationsWithSmtpTransport(List<NotifyEntity> notifications) {
         Date now = dateService.nowDate();
         List<Long> ret = new ArrayList<>();
 

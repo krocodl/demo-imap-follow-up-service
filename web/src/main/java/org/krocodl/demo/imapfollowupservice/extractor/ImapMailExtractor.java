@@ -2,7 +2,6 @@ package org.krocodl.demo.imapfollowupservice.extractor;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.krocodl.demo.imapfollowupservice.common.datamodel.BatchOfMails;
-import org.krocodl.demo.imapfollowupservice.common.services.DateService;
 import org.krocodl.demo.imapfollowupservice.common.services.ServiceStateService;
 import org.springframework.stereotype.Service;
 
@@ -16,12 +15,9 @@ public class ImapMailExtractor implements MailExtractor {
 
     private final ServiceStateService serviceState;
 
-    private final DateService dateService;
-
-    public ImapMailExtractor(final ImapMailReceiver imapTransport, final ServiceStateService serviceState, final DateService dateService) {
+    public ImapMailExtractor(final ImapMailReceiver imapTransport, final ServiceStateService serviceState) {
         this.imapTransport = imapTransport;
         this.serviceState = serviceState;
-        this.dateService = dateService;
     }
 
 

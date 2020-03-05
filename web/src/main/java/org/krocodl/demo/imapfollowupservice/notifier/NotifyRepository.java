@@ -37,5 +37,5 @@ public interface NotifyRepository extends JpaRepository<NotifyEntity, Long> {
 
     @Modifying
     @Query("update NotifyEntity n set n.wasSent = FALSE")
-    int marAllkAsNotSent();
+    int marAllAsNotSent();
 }

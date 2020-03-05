@@ -100,10 +100,11 @@ public class BusinessProcessService {
         };
     }
 
-    protected void executeRawBusinessProcess() {
+    void executeRawBusinessProcess() {
         BatchOfMails batch = extractor.extractMails(-analiser.getMaximumRemindPerionsForOutcomingMails());
         int savedCount = transactionalService.executeInNewTransaction(
-                () -> analiser.saveOutcomingMails(batch), "Saving batch of received mails");
+                () -> analiser.saveOutcomingMails(batch),
+                "Saving batch of received mails");
         LOGGER.info("{} outcoming messages were saved", savedCount);
 
         List<Long> sentQueueIds = batch.getOutcomingMails().values().stream().
@@ -111,23 +112,24 @@ public class BusinessProcessService {
                 filter(Objects::nonNull).
                 collect(Collectors.toList());
         int lostCount = transactionalService.executeInNewTransaction(() ->
-                notifyService.compensateBrokenSendingTransaction(sentQueueIds), "Removing lost messages from the notify queue");
+                        notifyService.compensateBrokenSendingTransaction(sentQueueIds),
+                "Removing lost messages from the notify queue");
         LOGGER.info(" Found {} lost messages in the notify queue", lostCount);
 
         List<String> matchedMailIds = analiser.prepareMailsMatching(batch);
-        LogUtils.infoCollection(LOGGER, matchedMailIds, "Matched messages");
         transactionalService.executeInNewTransaction(() -> {
-            analiser.applyMailsMatching(batch, matchedMailIds);
+            analiser.applyMailsMatching(batch.getLastReceiveUid(), matchedMailIds);
             notifyService.deleteNotificationsForMatchedMails(matchedMailIds);
         }, "Applying matching");
+        LogUtils.infoCollection(LOGGER, matchedMailIds, "Matched messages");
 
 
         List<NotifyEntity> notifications = analiser.createNotificationsFromOutcompingMails();
-        LogUtils.infoCollection(LOGGER, notifications, "Created notifications");
         transactionalService.executeInNewTransaction(() -> {
             notifyService.addNotificationsToQueue(notifications);
             analiser.commitOutcomingMailsAsNotified(notifications);
         }, "Applying created notifications");
+        LogUtils.infoCollection(LOGGER, notifications, "Created notifications");
 
         int count = notifyService.sendNotificationsFromQueue();
         LOGGER.info("{} notifications were sent", count);

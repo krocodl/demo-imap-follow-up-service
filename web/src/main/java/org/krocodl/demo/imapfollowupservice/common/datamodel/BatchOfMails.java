@@ -8,8 +8,8 @@ import java.util.Map;
 
 public class BatchOfMails {
 
-    private List<IncomingMailDto> incomingMails = new ArrayList<>();
-    private Map<String, OutcomingMailEntity> outcomingMails = new HashMap<>();
+    private final List<IncomingMailDto> incomingMails = new ArrayList<>();
+    private final Map<String, OutcomingMailEntity> outcomingMails = new HashMap<>();
     private long lastSendUid = 0;
     private long lastReceiveUid = 0;
 

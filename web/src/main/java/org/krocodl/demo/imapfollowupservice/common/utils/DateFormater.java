@@ -15,8 +15,8 @@ public class DateFormater {
     private static final String DD_MM_YYYY = "dd-MM-yyyy";
 
 
-    private static ThreadLocal<DateFormat> dfTime = ThreadLocal.withInitial(() -> new SimpleDateFormat(DD_MM_YYYY_HH_MM_SS));
-    private static ThreadLocal<DateFormat> dfDate = ThreadLocal.withInitial(() -> new SimpleDateFormat(DD_MM_YYYY));
+    private static final ThreadLocal<DateFormat> dfTime = ThreadLocal.withInitial(() -> new SimpleDateFormat(DD_MM_YYYY_HH_MM_SS));
+    private static final ThreadLocal<DateFormat> dfDate = ThreadLocal.withInitial(() -> new SimpleDateFormat(DD_MM_YYYY));
 
     public static Date parse(String dateString) {
         try {
