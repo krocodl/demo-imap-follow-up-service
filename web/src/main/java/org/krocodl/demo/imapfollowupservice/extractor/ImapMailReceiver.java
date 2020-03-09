@@ -42,7 +42,7 @@ public class ImapMailReceiver {
     public static final String IMAP_OUTBOX_NAME = "imap.outbox";
     public static final String SMTP_SERVER = "smtp.server";
     public static final String SMTP_PORT = "smtp.port";
-    private static final long MAX_FOLDER_MSG_UID = Long.MAX_VALUE - 1;
+    private static final long MAX_FOLDER_MSG_UID = Integer.MAX_VALUE;
     private static final Logger LOGGER = LoggerFactory.getLogger(ImapMailReceiver.class);
     private static final String ID_ATTRIBUTE_OUTBOX_FOLDER = "\\Sent";
     private static final String STD_AUTO_OUTBOX_FOLDER = "auto";
